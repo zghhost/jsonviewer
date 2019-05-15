@@ -1,0 +1,41 @@
+# java
+*.class
+*.jar
+*.war
+*.ear
+*.scssc
+
+# ivy lib folder
+/lib
+
+# ant output folder
+/build
+
+# Intellij IDEA config
+.idea
+*.iml
+/out
+/classes
+
+# maven output folder
+/target
+
+# Eclipse config
+.classpath
+.project
+.settings
+/bin
+
+# icon cache
+.DS_Store
+Dockerfile
+
+# Intellij gradle config
+.gradle/
+
+#忽略项目打包文件
+ddats/out/
+ddats-api/src/main/thrift/
+ddats-api/build/
+ddats/build/
+
