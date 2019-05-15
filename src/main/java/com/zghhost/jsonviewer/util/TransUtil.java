@@ -3,6 +3,8 @@ package com.zghhost.jsonviewer.util;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.regex.Pattern;
+
 /**
  * @author guohua.zhang@in.com.cn
  * @Date 2019/5/15 11:21
@@ -42,11 +44,21 @@ public class TransUtil {
         if(name == null){
             return null;
         }
+
         try {
             String src = underlineName(name).replaceAll("_"," ");
-            String jsonres = HttpUtil.doHttpGet("http://fy.iciba.com/ajax.php?a=fy&f=en&t=zh&w="+src,500,500);
+            String jsonres = HttpUtil.doHttpGet("http://fy.iciba.com/ajax.php?a=fy&f=en&t=zh&w="+src,1000,1000);
             JSONObject job = JSONObject.parseObject(jsonres);
-            return job.getJSONObject("content").getString("out");
+            String transedString = job.getJSONObject("content").getString("out");
+            if(transedString == null){
+                //说明是单词或者词组 和翻译的返回结果不同
+                transedString = job.getJSONObject("content").getString("word_mean");
+                transedString = PatternUtil.getValueWithRex(transedString," ([^;]*)");
+            }
+            if(transedString == null){
+                System.out.println(jsonres);
+            }
+            return transedString;
         }catch (Exception e){
             return null;
         }

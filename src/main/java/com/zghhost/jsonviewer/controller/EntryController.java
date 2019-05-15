@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
@@ -48,22 +49,26 @@ public class EntryController {
                     o = TransUtil.getJsonObject(jsonText);
                 }catch (Exception e){
                     res.getWriter().println(HtmlUtil.geneErrorHtml("无效的JSON TEXT"));
+                    return;
                 }
             }else if(!nullJsonUrl){
                 try {
                     o = TransUtil.getJsonObject(HttpUtil.doHttpGet(jsonUrl));
                 }catch (Exception e){
                     res.getWriter().println(HtmlUtil.geneErrorHtml("无效的JSON URL"));
+                    return;
                 }
             }
+
+            OutputStream os = res.getOutputStream();
             try{
                 res.setHeader("Content-type","multipart/form-data");
                 res.setHeader("Content-Disposition", "attachment;fileName="+System.currentTimeMillis()+".xls");
-                writeExcel(o,res.getOutputStream());
+                writeExcel(o,os);
             }catch (Exception e){
                 e.printStackTrace();
                 res.setHeader("Content-type","text/html;charset=UTF-8");
-                res.getWriter().println(HtmlUtil.geneErrorHtml("转储失败"));
+                ((ServletOutputStream) os).println(HtmlUtil.geneErrorHtml("转储失败"));
             }
         }
     }
@@ -97,7 +102,8 @@ public class EntryController {
             objname = TransUtil.underlineName(objname);
 
             //表名
-            ws.addCell(new Label(col,entityPoint,objname,format));
+            String transedObjname = TransUtil.transEN2ZH(objname);
+            ws.addCell(new Label(col,entityPoint,objname + (transedObjname == null ? "" : "("+transedObjname+")"),format));
             ws.mergeCells(col,entityPoint,col+3,entityPoint);
             entityPoint++;
 
@@ -134,13 +140,16 @@ public class EntryController {
                 }else{
                     String type = "varchar";
 
-                    if(value.getClass() == java.math.BigDecimal.class){
-                        type = "double";
-                    }else if(value.getClass() == java.lang.Integer.class){
-                        type = "int";
-                    }else if(value.getClass() == java.lang.Long.class){
-                        type = "long";
+                    if(value != null){
+                        if(value.getClass() == java.math.BigDecimal.class){
+                            type = "double";
+                        }else if(value.getClass() == java.lang.Integer.class){
+                            type = "int";
+                        }else if(value.getClass() == java.lang.Long.class){
+                            type = "long";
+                        }
                     }
+
                     ws.addCell(new Label(col,entityPoint,TransUtil.underlineName(key),format));
                     ws.addCell(new Label(col+1,entityPoint,type,format));
                     ws.addCell(new Label(col+2,entityPoint,TransUtil.transEN2ZH(key),format));
@@ -151,7 +160,7 @@ public class EntryController {
             }
         }else if(o instanceof JSONArray){
             JSONArray ja = (JSONArray)o;
-            if(ja.get(0) instanceof JSONObject){
+            if(ja.size() > 0 && ja.get(0) instanceof JSONObject){
                 swellPoint = writeEntity(objname,ja.getJSONObject(0),ws,row,col,parentId,"MANY TO ONE");
             }
         }
